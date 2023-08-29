@@ -46,7 +46,7 @@ async def client(recv_queue, send_queue, address, port, debug):
                     for i in range(send_queue.qsize()):
                         packet = send_queue.get()
                         await websocket.send(packet)
-                    print('8070 send data complete')
+                    # print('8070 send data complete')
                     pass
             except Exception as e:
                 print(e)

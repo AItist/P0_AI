@@ -14,7 +14,12 @@ def slide_image(img, pose_center):
     
     # 결과 이미지 초기화 (검은색으로 채움)
     result = np.ones_like(img) * 255
+    # result = np.ones_like((1024, 1024, 3), dtype=np.uint8) * 255
     
+    # array = np.zeros((1024, 1024, 3), dtype=np.uint8)
+    array = np.ones((1024, 1024, 3), dtype=np.uint8) * 255
+    print(array.shape)
+
     # 이미지를 dx, dy만큼 슬라이드
     if dx > 0:
         result[:, :width-dx] = img[:, dx:]
@@ -23,13 +28,16 @@ def slide_image(img, pose_center):
         
     if dy > 0:
         result[:height-dy, :] = img[dy:, :]
+        result[-dy:, :] = 255
     else:
         result[-dy:, :] = img[:height+dy, :]
+        result[:height-dy, :] = 255
         
     return result
 
 def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, poseFlag=ePoses.CVZONE, segFlag=eSegs.YOLO):
     import cv2
+    import numpy as np
     from common.detect_pose import detect_pose
     from common.detect_seg import detect_seg
     from common.detect_pose_seg import detect_pose_seg
@@ -43,9 +51,29 @@ def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, p
         seg_img = None
 
         if poseFlag == ePoses.MEDIAPIPE or segFlag == eSegs.MEDIAPIPE:
-            pose_string, pose_center, seg_img = detect_pose_seg(img, poseFlag, segFlag, isDebug)
-            seg_img = slide_image(seg_img, pose_center)
-            seg_img = cv2.flip(seg_img, 0)
+            pose_string, pose_center, seg_img, lmList = detect_pose_seg(img, poseFlag, segFlag, isDebug)
+            print(lmList[0], lmList[11], lmList[12], lmList[23], lmList[24])
+            # [0]: 머리
+            # [11]: 왼쪽 어깨
+            # [12]: 오른쪽 어깨
+            # [23]: 왼쪽 엉덩이
+            # [24]: 오른쪽 엉덩이
+            lst = [lmList[0], lmList[11], lmList[12], lmList[23], lmList[24]]
+            lst = np.array(lst)
+            pose_center2 = np.sum(lst, axis=0) / 5
+            pose_center2 = [int(pose_center2[1]), int(pose_center2[2])]
+            # pose_center2 = np.sum(lmList[0] + lmList[11] + lmList[12] + lmList[23] + lmList[24]) / 5
+
+            print(pose_center, pose_center2, lmList[0])
+
+            cv2.circle(seg_img, pose_center2, 5, (255, 255, 0), cv2.FILLED)
+
+            # seg_img = slide_image(seg_img, pose_center)
+            # new_img = np.ones((1024, 1024, 3), dtype=np.uint8) * 255
+            seg_img = slide_image(seg_img, pose_center2)
+
+            # seg_img = cv2.flip(seg_img, 0)
+            # print(lmList[0], lmList[15])
             cv2.imwrite(f'seg_{index}.jpg', seg_img)
         else:
             if RUN_SEG:
