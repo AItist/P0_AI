@@ -11,6 +11,7 @@ import threading
 import base64
 import cv2
 import numpy as np
+import time
 
 RUN_POSE = True
 RUN_SEG = True
@@ -26,12 +27,10 @@ async def client(recv_queue, send_queue, address, port, debug):
     uri = f"ws://{address}:{port}" #"ws://localhost:8080"
     print(f'uri : {uri}')
     
-    chunk_datas = []
     async with websockets.connect(uri) as websocket:
         while runFlag:
             try:
                 data = await websocket.recv()
-
                 chunk_data = json.loads(data)
                 
                 decoded_bytes = base64.b64decode(chunk_data['frame'])
@@ -47,11 +46,10 @@ async def client(recv_queue, send_queue, address, port, debug):
                     for i in range(send_queue.qsize()):
                         packet = send_queue.get()
                         await websocket.send(packet)
-                    print('send data')
+                    print('8070 send data complete')
                     pass
             except Exception as e:
                 print(e)
-                chunk_datas = []
                 pass
             # print(f"< {data}")
 
@@ -66,8 +64,6 @@ def run_inference(recv_queue, send_queue, debug, socket_address='localhost', soc
             
             data = None
             data = recv_queue.get()
-            # while not recv_queue.empty():
-            #     data = recv_queue.get()
             
             if data is None:
                 continue
@@ -100,14 +96,12 @@ if __name__ == '__main__':
     recv_queue = queue.Queue()
     send_queue = queue.Queue()
 
-    # socketInstance = _socket.SocketClient()
-    # thread_socket = threading.Thread(target=client, args=(recv_queue, send_queue, sAddr, sPort, debug))
     thread_socket = threading.Thread(target=run_client, args=(recv_queue, send_queue, sAddr, sPort, debug))
     thread_socket.start()
     
     thread_inference = threading.Thread(target=run_inference, args=(recv_queue, send_queue, debug, sAddr, sPort))
     thread_inference.start()
-    
+
     thread_socket.join()
     thread_inference.join()
     pass
