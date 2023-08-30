@@ -66,11 +66,12 @@ def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, p
 
             print(pose_center, pose_center2, lmList[0])
 
-            cv2.circle(seg_img, pose_center2, 5, (255, 255, 0), cv2.FILLED)
+            cv2.circle(seg_img, pose_center2, 5, (0, 0, 0), cv2.FILLED)
 
             # seg_img = slide_image(seg_img, pose_center)
             # new_img = np.ones((1024, 1024, 3), dtype=np.uint8) * 255
             seg_img = slide_image(seg_img, pose_center2)
+
 
             # seg_img = cv2.flip(seg_img, 0)
             # print(lmList[0], lmList[15])
