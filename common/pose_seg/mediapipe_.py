@@ -42,7 +42,7 @@ def _findPosition(image, pose_landmarks, draw=True):
 
     bboxInfo = {"bbox": bbox, "center": (cx, cy)}
 
-    if not draw:
+    if draw:
         cv2.rectangle(image, bbox, (255, 0, 255), 3)
         cv2.circle(image, (cx, cy), 5, (255, 0, 0), cv2.FILLED)
 
@@ -88,7 +88,7 @@ def detect_pose_seg(image, debug=False):
     segmented_image = cv2.cvtColor(segmented_image, cv2.COLOR_RGB2BGR)
     # cv2.cvtColor(output_img, cv2.COLOR_RGB2BGR)
     
-    return lmString, bboxInfo['center'], segmented_image, lmList
+    return lmString, bboxInfo['center'], segmented_image, lmList, bboxInfo
 
 if __name__ == '__main__':
     # Capture video from camera
