@@ -2,7 +2,42 @@ from common.enum_ import ePoses, eSegs
 import cv2
 import numpy as np
 
-def slide_image(img, pose_center, re_width=1024, re_height=1024):
+def slide_image0(img, pose_center):
+    import numpy as np
+    # 이미지의 높이와 너비
+    height, width, _ = img.shape
+    
+    # 이미지의 중심점
+    center_x, center_y = width // 2, height // 2
+    
+    # pose_center와 이미지 중심점과의 차이 계산
+    dx = pose_center[0] - center_x
+    dy = pose_center[1] - center_y
+    
+    # 결과 이미지 초기화 (검은색으로 채움)
+    result = np.ones_like(img) * 255
+    # result = np.ones_like((1024, 1024, 3), dtype=np.uint8) * 255
+    
+    # array = np.zeros((1024, 1024, 3), dtype=np.uint8)
+    array = np.ones((1024, 1024, 3), dtype=np.uint8) * 255
+    # print(array.shape)
+
+    # 이미지를 dx, dy만큼 슬라이드
+    if dx > 0:
+        result[:, :width-dx] = img[:, dx:]
+    else:
+        result[:, -dx:] = img[:, :width+dx]
+        
+    if dy > 0:
+        result[:height-dy, :] = img[dy:, :]
+        result[-dy:, :] = 255
+    else:
+        result[-dy:, :] = img[:height+dy, :]
+        result[:height-dy, :] = 255
+        
+    return result
+
+def slide_image1(img, pose_center, re_width=1024, re_height=1024):
     import cv2
     import numpy as np
 
@@ -67,41 +102,58 @@ def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, p
             # [24]: 오른쪽 엉덩이
             lst = [lmList[0], lmList[11], lmList[12], lmList[23], lmList[24]]
             lst = np.array(lst)
+
+            lshoulder = lmList[11]
+            rshoulder = lmList[12]
+            lhip = lmList[23]
+            rhip = lmList[24]
+
+            neck = (int((lshoulder[1] + rshoulder[1]) / 2), int((lshoulder[2] + rshoulder[2]) / 2))
+            chest = (int((lshoulder[1] + rshoulder[1] + lhip[1] + rhip[1]) / 4), 
+                     int((lshoulder[2] + rshoulder[2] + lhip[2] + rhip[2]) / 4))
+            middle_spine = (int((chest[0] + neck[0]) / 2), int((chest[1] + neck[1]) / 2))
+            
+
             pose_center2 = np.sum(lst, axis=0) / 5
             pose_center2 = [int(pose_center2[1]), int(pose_center2[2])]
             # pose_center2 = np.sum(lmList[0] + lmList[11] + lmList[12] + lmList[23] + lmList[24]) / 5
 
             print(pose_center, pose_center2, lmList[0], bboxInfo['bbox'])
 
-            bbox_x_min = bboxInfo['bbox'][0]
-            bbox_x_max = bboxInfo['bbox'][0] + bboxInfo['bbox'][2]
-            bbox_y_min = bboxInfo['bbox'][1]
-            bbox_y_max = bboxInfo['bbox'][1] + bboxInfo['bbox'][3]
+            # bbox_x_min = bboxInfo['bbox'][0]
+            # bbox_x_max = bboxInfo['bbox'][0] + bboxInfo['bbox'][2]
+            # bbox_y_min = bboxInfo['bbox'][1]
+            # bbox_y_max = bboxInfo['bbox'][1] + bboxInfo['bbox'][3]
 
-            # print(bbox_x_min, bbox_x_max, bbox_y_min, bbox_y_max)
+            # # print(bbox_x_min, bbox_x_max, bbox_y_min, bbox_y_max)
 
-            pose_center2_x_min_dist = pose_center2[0] - bbox_x_min
-            pose_center2_x_max_dist = bbox_x_max - pose_center2[0]
-            pose_center2_y_min_dist = pose_center2[1] - bbox_y_min
-            pose_center2_y_max_dist = bbox_y_max - pose_center2[1]
-            # print(pose_center2_x_min_dist, pose_center2_x_max_dist, pose_center2_y_min_dist, pose_center2_y_max_dist)
+            # pose_center2_x_min_dist = pose_center2[0] - bbox_x_min
+            # pose_center2_x_max_dist = bbox_x_max - pose_center2[0]
+            # pose_center2_y_min_dist = pose_center2[1] - bbox_y_min
+            # pose_center2_y_max_dist = bbox_y_max - pose_center2[1]
+            # # print(pose_center2_x_min_dist, pose_center2_x_max_dist, pose_center2_y_min_dist, pose_center2_y_max_dist)
 
-            # 오른쪽 끝으로 간 상황
-            x_max = pose_center2_x_min_dist if pose_center2_x_min_dist > pose_center2_x_max_dist else pose_center2_x_max_dist
-            y_max = pose_center2_y_min_dist if pose_center2_y_min_dist > pose_center2_y_max_dist else pose_center2_y_max_dist
+            # # 오른쪽 끝으로 간 상황
+            # x_max = pose_center2_x_min_dist if pose_center2_x_min_dist > pose_center2_x_max_dist else pose_center2_x_max_dist
+            # y_max = pose_center2_y_min_dist if pose_center2_y_min_dist > pose_center2_y_max_dist else pose_center2_y_max_dist
             # cv2.circle(seg_img, pose_center2, 5, (0, 0, 0), cv2.FILLED)
 
-            if pose_center2_x_min_dist > pose_center2_x_max_dist:
-                # 왼쪽 길이가 오른쪽 길이보다 길다면                
-                # print(f'before: {pose_center2[0]}')
-                pose_center2[0] = pose_center2[0] - pose_center2_x_min_dist + pose_center2_x_max_dist
-                # print(f'after: {pose_center2[0]}')
-                pass
-            else:
-                # print(f'before: {pose_center2[0]}')
-                pose_center2[0] = pose_center2[0] + pose_center2_x_max_dist - pose_center2_x_min_dist
-                # print(f'after: {pose_center2[0]}')
-                pass
+            # cv2.circle(seg_img, neck, 5, (255, 0, 0), cv2.FILLED)
+            cv2.circle(seg_img, chest, 5, (0, 255, 0), cv2.FILLED)
+            # cv2.circle(seg_img, middle_spine, 5, (0, 0, 255), cv2.FILLED)
+
+
+            # if pose_center2_x_min_dist > pose_center2_x_max_dist:
+            #     # 왼쪽 길이가 오른쪽 길이보다 길다면                
+            #     # print(f'before: {pose_center2[0]}')
+            #     pose_center2[0] = pose_center2[0] - pose_center2_x_min_dist + pose_center2_x_max_dist
+            #     # print(f'after: {pose_center2[0]}')
+            #     pass
+            # else:
+            #     # print(f'before: {pose_center2[0]}')
+            #     pose_center2[0] = pose_center2[0] + pose_center2_x_max_dist - pose_center2_x_min_dist
+            #     # print(f'after: {pose_center2[0]}')
+            #     pass
 
             # if pose_center2_y_min_dist > pose_center2_y_max_dist:
             #     # 위쪽 길이가 아래쪽 길이보다 길다면
@@ -118,7 +170,8 @@ def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, p
             # seg_img = slide_image(seg_img, pose_center)
             # new_img = np.ones((1024, 1024, 3), dtype=np.uint8) * 255
 
-            seg_img = slide_image(seg_img, pose_center2)
+            seg_img = slide_image0(seg_img, chest)
+            # seg_img = slide_image1(seg_img, pose_center2)
             # seg_img = slide_image_centered_v5(seg_img, pose_center2)
 
 
@@ -133,7 +186,7 @@ def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, p
             if RUN_POSE:
                 pose_string, pose_center = detect_pose(img, poseFlag, isDebug)
 
-            seg_img = slide_image(seg_img, pose_center)
+            seg_img = slide_image0(seg_img, pose_center)
         
         # if RUN_SEG:
         #     seg_img = detect_seg(img, segFlag, isDebug)
