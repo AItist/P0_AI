@@ -84,8 +84,8 @@ def run_inference(recv_queue, send_queue, debug, socket_address='localhost', soc
 
 if __name__ == '__main__':
     index, sAddr, sPort, debug = step1_get_index_from_args()
-    # sAddr = 'localhost'
-    sAddr = '192.168.50.50'
+    sAddr = 'localhost'
+    # sAddr = '192.168.50.50'
     sPort = '8070'
     debug = True
 

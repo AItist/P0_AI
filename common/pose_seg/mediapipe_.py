@@ -49,7 +49,8 @@ def _findPosition(image, pose_landmarks, draw=True):
     return lmList, bboxInfo
 
 def detect_pose_seg(image, debug=False):
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image_rgb = image
+    # image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     
     # Detect pose
     results = holistic.process(image_rgb)
