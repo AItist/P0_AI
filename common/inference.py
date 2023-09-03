@@ -75,6 +75,22 @@ def slide_image1(img, pose_center, re_width=1024, re_height=1024):
         
     return result
 
+def correct_pose_with_chest(lmList, chest):
+    corrected_list = []
+    
+    for lm in lmList:
+        corrected_x = lm[1] - chest[0]
+        corrected_y = lm[2] - chest[1]
+        # Z 값은 chest의 Z 좌표 정보가 제공되지 않았기 때문에 변경하지 않습니다.
+        corrected_pose = [lm[0], corrected_x, corrected_y, lm[3]]
+        corrected_list.append(corrected_pose)
+    
+    return corrected_list
+
+# 사용 예:
+# lmList = [...]  # 포즈 데이터
+# chest = (1, 2)
+# corrected_poses = correct_pose_with_chest(lmList, chest)
 
 
 def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, poseFlag=ePoses.CVZONE, segFlag=eSegs.YOLO):
@@ -113,6 +129,12 @@ def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, p
                      int((lshoulder[2] + rshoulder[2] + lhip[2] + rhip[2]) / 4))
             middle_spine = (int((chest[0] + neck[0]) / 2), int((chest[1] + neck[1]) / 2))
             
+            # 이미지의 중심 위치를 보정한다.
+            lmList_temp = correct_pose_with_chest(lmList, chest)
+
+            lmString = ''
+            for lm in lmList_temp:
+                lmString += f'{lm[1]},{img.shape[0] - lm[2]},{lm[3]},'
 
             pose_center2 = np.sum(lst, axis=0) / 5
             pose_center2 = [int(pose_center2[1]), int(pose_center2[2])]
@@ -170,7 +192,7 @@ def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, p
             # seg_img = slide_image(seg_img, pose_center)
             # new_img = np.ones((1024, 1024, 3), dtype=np.uint8) * 255
 
-            seg_img = slide_image0(seg_img, chest)
+            # seg_img = slide_image0(seg_img, chest)
             # seg_img = slide_image1(seg_img, pose_center2)
             # seg_img = slide_image_centered_v5(seg_img, pose_center2)
 
@@ -203,7 +225,8 @@ def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, p
         _pose_center = [float(0.5 - pose_center[0] / img.shape[1]), float(0.5 - pose_center[1] / img.shape[0])]
 
         # print('1')
-        return [pose_string, seg_img, _pose_center]
+        return [lmString, seg_img, _pose_center]
+        # return [pose_string, seg_img, _pose_center]
     except Exception as e:
         print(f"main/ai_model_inference: Error during model inference: {e}")
         pass
