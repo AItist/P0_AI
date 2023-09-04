@@ -169,18 +169,25 @@ def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, p
             # cv2.circle(seg_img, middle_spine, 5, (0, 0, 255), cv2.FILLED)
             # cv2.circle(seg_img, under_spine, 5, (255, 0, 0), cv2.FILLED)
 
-            # seg_img_chest = slide_image0(seg_img, chest)
-            seg_img_under_spine = slide_image0(seg_img, under_spine)
+            # seg_img_under_spine = slide_image0(seg_img, under_spine)
+            seg_img = slide_image0(seg_img, under_spine)
 
-            # seg_img = cv2.flip(seg_img, 0)
-            seg_img_under_spine = cv2.flip(seg_img_under_spine, 0)
+            # seg_img_under_spine = cv2.flip(seg_img_under_spine, 0)
+            seg_img = cv2.flip(seg_img, 0)
             
             if isDebug:
-                # cv2.imwrite(f'seg_{index}.jpg', seg_img)
+                cv2.imwrite(f'seg_{index}.jpg', seg_img)
                 # cv2.imwrite(f'seg_chest.jpg', seg_img_chest)
-                cv2.imwrite(f'seg_under_spine.jpg', seg_img_under_spine)
+                # cv2.imwrite(f'seg_under_spine.jpg', seg_img_under_spine)
                 # cv2.imwrite(f'seg_center2.jpg', seg_img_center2)
                 pass
+
+            # seg_img = seg_img_under_spine
+
+            _pose_center = [float(0.5 - pose_center[0] / img.shape[1]), float(0.5 - pose_center[1] / img.shape[0])]
+
+            return [lmString, seg_img, _pose_center]
+            # return [lmString, seg_img_under_spine, _pose_center]
         else:
             if RUN_SEG:
                 seg_img = detect_seg(img, segFlag, isDebug)
@@ -200,8 +207,8 @@ def ai_model_inference(index, img, isDebug=False, RUN_POSE=True, RUN_SEG=True, p
 
         _pose_center = [float(0.5 - pose_center[0] / img.shape[1]), float(0.5 - pose_center[1] / img.shape[0])]
 
-        return [lmString, seg_img_under_spine, _pose_center]
-        # return [lmString, seg_img, _pose_center]
+        # return [lmString, seg_img_under_spine, _pose_center]
+        return [lmString, seg_img, _pose_center]
         # return [pose_string, seg_img, _pose_center]
     except Exception as e:
         print(f"main/ai_model_inference: Error during model inference: {e}")
