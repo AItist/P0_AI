@@ -27,31 +27,61 @@ async def client(recv_queue, send_queue, address, port, debug):
     uri = f"ws://{address}:{port}" #"ws://localhost:8080"
     print(f'uri : {uri}')
     
-    async with websockets.connect(uri) as websocket:
-        while runFlag:
-            try:
-                data = await websocket.recv()
-                chunk_data = json.loads(data)
+    while True:
+        try:
+            async with websockets.connect(uri) as websocket:
+                while runFlag:
+                    try:
+                        data = await websocket.recv()
+                        chunk_data = json.loads(data)
+                        
+                        decoded_bytes = base64.b64decode(chunk_data['frame'])
+                        nparr = np.frombuffer(decoded_bytes, np.uint8)
+                        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+                        chunk_data['frame'] = frame
+
+                        recv_queue.put(chunk_data)
+
+                        if send_queue.qsize() > 0:
+                            # print('qsize : ', send_queue.qsize())
+                            for i in range(send_queue.qsize()):
+                                packet = send_queue.get()
+                                await websocket.send(packet)
+                            # print('8070 send data complete')
+                            pass
+                    except Exception as e:
+                        print(e)
+                        pass
+                    # print(f"< {data}")
+        except Exception as e:
+            print(f"Failed to connect to {uri}. Reason: {e}")
+            pass
+    # async with websockets.connect(uri) as websocket:
+    #     while runFlag:
+    #         try:
+    #             data = await websocket.recv()
+    #             chunk_data = json.loads(data)
                 
-                decoded_bytes = base64.b64decode(chunk_data['frame'])
-                nparr = np.frombuffer(decoded_bytes, np.uint8)
-                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    #             decoded_bytes = base64.b64decode(chunk_data['frame'])
+    #             nparr = np.frombuffer(decoded_bytes, np.uint8)
+    #             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-                chunk_data['frame'] = frame
+    #             chunk_data['frame'] = frame
 
-                recv_queue.put(chunk_data)
+    #             recv_queue.put(chunk_data)
 
-                if send_queue.qsize() > 0:
-                    # print('qsize : ', send_queue.qsize())
-                    for i in range(send_queue.qsize()):
-                        packet = send_queue.get()
-                        await websocket.send(packet)
-                    # print('8070 send data complete')
-                    pass
-            except Exception as e:
-                print(e)
-                pass
-            # print(f"< {data}")
+    #             if send_queue.qsize() > 0:
+    #                 # print('qsize : ', send_queue.qsize())
+    #                 for i in range(send_queue.qsize()):
+    #                     packet = send_queue.get()
+    #                     await websocket.send(packet)
+    #                 # print('8070 send data complete')
+    #                 pass
+    #         except Exception as e:
+    #             print(e)
+    #             pass
+    #         # print(f"< {data}")
 
 def run_client(recv_queue, send_queue, address, port, debug):
     asyncio.new_event_loop().run_until_complete(client(recv_queue, send_queue, address, port, debug))
@@ -82,10 +112,22 @@ def run_inference(recv_queue, send_queue, debug, socket_address='localhost', soc
 
     pass
 
+def set_target_server_address():
+    local_ip = ip_list()[2]
+    if local_ip.split('.')[2] == '0': # GMAF
+        Addr = '192.168.0.40'
+    elif local_ip.split('.')[2] == '50': # 서울
+        Addr = '192.168.50.50'
+    else: # 디버깅 등
+        Addr = 'localhost'
+    # print(f'sAddr: {sAddr}')
+    return Addr
+
 if __name__ == '__main__':
+    from modules.ip import get_all_internal_ips as ip_list
+
     index, sAddr, sPort, debug = step1_get_index_from_args()
-    # sAddr = 'localhost'
-    sAddr = '192.168.50.50'
+    sAddr = set_target_server_address()
     sPort = '8070'
     debug = True
 
