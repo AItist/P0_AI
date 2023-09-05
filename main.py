@@ -113,7 +113,7 @@ def run_inference(recv_queue, send_queue, debug, socket_address='localhost', soc
     pass
 
 def set_target_server_address():
-    local_ip = ip_list()[2]
+    local_ip = ip_list()[0]
     if local_ip.split('.')[2] == '0': # GMAF
         Addr = '192.168.0.40'
     elif local_ip.split('.')[2] == '50': # 서울
