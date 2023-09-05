@@ -52,7 +52,7 @@ async def client(recv_queue, send_queue, address, port, debug):
                             pass
                     except Exception as e:
                         print(e)
-                        pass
+                        break
                     # print(f"< {data}")
         except Exception as e:
             print(f"Failed to connect to {uri}. Reason: {e}")
